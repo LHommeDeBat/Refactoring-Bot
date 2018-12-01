@@ -27,6 +27,7 @@ public class BotIssue {
 		return line;
 	}
 	
+	@Override
 	public void setLine(Integer line) {
 		this.line = line;
 	}
@@ -40,3 +41,4 @@ public class BotIssue {
 	}
 	
 }
+
