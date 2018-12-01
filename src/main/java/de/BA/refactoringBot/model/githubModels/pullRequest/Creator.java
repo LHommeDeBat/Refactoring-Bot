@@ -82,7 +82,8 @@ public class Creator {
         this.login = login;
     }
 
-    @JsonProperty("id")
+    @JsonProperty("id")@Override
+    
     public Integer getId() {
         return id;
     }
@@ -263,3 +264,4 @@ public class Creator {
     }
 
 }
+
