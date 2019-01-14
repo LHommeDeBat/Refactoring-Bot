@@ -135,6 +135,12 @@ public class GrammarController {
 					// Set name of the parameter
 					issue.setRefactorString(commentArr[6]);
 				}
+				// Remove variable
+				if (commentArr[2].equals("VARIABLE")) {
+					issue.setRefactoringOperation(RefactoringOperations.REMOVE_VARIABLE);
+					// Set name of the variable
+					issue.setRefactorString(commentArr[6]);
+				}
 				// Add line/position
 				issue.setLine(Integer.valueOf(commentArr[4]));
 			}
