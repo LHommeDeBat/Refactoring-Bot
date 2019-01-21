@@ -1,22 +1,27 @@
 package de.refactoringbot.refactoring.supportedrefactorings;
 
 import java.io.FileInputStream;
+import java.util.ArrayList;
 import java.util.List;
 
 import com.github.javaparser.JavaParser;
 import com.github.javaparser.ast.CompilationUnit;
 import com.github.javaparser.ast.Node;
 import com.github.javaparser.ast.NodeList;
+import com.github.javaparser.ast.body.ConstructorDeclaration;
 import com.github.javaparser.ast.body.FieldDeclaration;
 import com.github.javaparser.ast.body.MethodDeclaration;
 import com.github.javaparser.ast.body.VariableDeclarator;
 import com.github.javaparser.ast.expr.AssignExpr;
 import com.github.javaparser.ast.expr.FieldAccessExpr;
+import com.github.javaparser.ast.expr.NameExpr;
 import com.github.javaparser.ast.expr.ThisExpr;
 import com.github.javaparser.ast.expr.VariableDeclarationExpr;
 import com.github.javaparser.ast.stmt.ReturnStmt;
+import com.github.javaparser.ast.stmt.Statement;
 import com.github.javaparser.printer.lexicalpreservation.LexicalPreservingPrinter;
 import com.github.javaparser.symbolsolver.JavaSymbolSolver;
+import com.github.javaparser.symbolsolver.resolution.SymbolSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.CombinedTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.JavaParserTypeSolver;
 import com.github.javaparser.symbolsolver.resolution.typesolvers.ReflectionTypeSolver;
@@ -60,6 +65,7 @@ public class RemoveVariable implements RefactoringImpl {
 		List<FieldDeclaration> fields = cu.findAll(FieldDeclaration.class);
 		List<FieldAccessExpr> exprs = cu.findAll(FieldAccessExpr.class);
 		List<MethodDeclaration> methods = cu.findAll(MethodDeclaration.class);
+		List<ConstructorDeclaration> constructors = cu.findAll(ConstructorDeclaration.class);
 
 		// Variable to delete
 		VariableDeclarator variableToDelete = null;
@@ -80,25 +86,35 @@ public class RemoveVariable implements RefactoringImpl {
 				}
 			}
 		}
-		for (FieldAccessExpr expr : exprs) {
-			List<ThisExpr> thisExprs = expr.findAll(ThisExpr.class);
 
-			System.out.println("");
-			System.out.println(
-					"Field Access size: " + expr.getChildNodes().size() + " at Line: " + expr.getBegin().get().line
-							+ " with scope: " + expr.getScope().toString() + " and name: " + expr.getNameAsString());
-
-			for (Node node : expr.getChildNodes()) {
-				System.out.println("Node: '" + node.toString() + "' at Column: " + node.getBegin().get().column);
-			}
-
-			for (ThisExpr thisExpr : thisExprs) {
-				System.out.println("");
-				System.out.println("This Expr Qualified Name: " + thisExpr.resolve().getQualifiedName());
-				System.out.println("This Expr Name: " + thisExpr.resolve().getName());
-				System.out.println("This Expr ID: " + thisExpr.resolve().getName());
-			}
+		// If variable not found
+		if (variableToDelete == null) {
+			throw new BotRefactoringException("Variable with given name does not exist at given line!");
 		}
+
+		// for (FieldAccessExpr expr : exprs) {
+		// List<ThisExpr> thisExprs = expr.findAll(ThisExpr.class);
+		//
+		// System.out.println("");
+		// System.out.println(
+		// "Field Access size: " + expr.getChildNodes().size() + " at Line: " +
+		// expr.getBegin().get().line
+		// + " with scope: " + expr.getScope().toString() + " and name: " +
+		// expr.getNameAsString());
+		//
+		// for (Node node : expr.getChildNodes()) {
+		// System.out.println("Node: '" + node.toString() + "' at Column: " +
+		// node.getBegin().get().column);
+		// }
+		//
+		// for (ThisExpr thisExpr : thisExprs) {
+		// System.out.println("");
+		// System.out.println("This Expr Qualified Name: " +
+		// thisExpr.resolve().getQualifiedName());
+		// System.out.println("This Expr Name: " + thisExpr.resolve().getName());
+		// System.out.println("This Expr ID: " + thisExpr.resolve().getName());
+		// }
+		// }
 
 		// Iterate methods
 		for (MethodDeclaration method : methods) {
@@ -113,24 +129,23 @@ public class RemoveVariable implements RefactoringImpl {
 				List<AssignExpr> assignments = method.getBody().get().findAll(AssignExpr.class);
 				List<ReturnStmt> returnStatement = method.getBody().get().findAll(ReturnStmt.class);
 				List<VariableDeclarationExpr> varDecls = method.findAll(VariableDeclarationExpr.class);
-				if (returnStatement.size() == 0) {
-					System.out.println("No return statement!");
-				} else if (returnStatement.size() == 1) {
-					System.out.println("Return: " + returnStatement.get(0).toString());
-				}
-				for (AssignExpr assignment : assignments) {
-					System.out.println("'" + assignment.toString() + "' at line: " + assignment.getBegin().get().line);
-				}
+				List<NameExpr> names = method.findAll(NameExpr.class);
+				List<Integer> sameNameDeclarations = new ArrayList<Integer>();
+				List<Statement> statements = method.findAll(Statement.class);
+				
+				// if (returnStatement.size() == 0) {
+				// System.out.println("No return statement!");
+				// } else if (returnStatement.size() == 1) {
+				// System.out.println("Return: " + returnStatement.get(0).toString());
+				// }
+				
+				// for (AssignExpr assignment : assignments) {
+				// System.out.println("Assignment '" + assignment.toString() + "' at line: " +
+				// assignment.getBegin().get().line);
+				// }
 
-				for (VariableDeclarationExpr varDecl : varDecls) {
-					System.out.println("'" + varDecl.toString() + "' at line: " + varDecl.getBegin().get().line);
-				}
+				
 			}
-		}
-
-		// If variable not found
-		if (variableToDelete == null) {
-			throw new BotRefactoringException("Variable with given name does not exist at given line!");
 		}
 
 		// Remove variable
@@ -141,7 +156,7 @@ public class RemoveVariable implements RefactoringImpl {
 			// Remove whole field
 			variableField.remove();
 		}
-		
+
 		throw new BotRefactoringException("Refactoring not finished yet!");
 	}
 
